@@ -1,42 +1,21 @@
-use std::io::{Read, Write};
+mod context;
 
-fn get_prompt() -> String {
-    "INFS> ".to_string()
-}
+#[tokio::main]
+async fn main() {
+    context::execute(|context| {
+        context.read();
 
-const QUIT_COMMAND: &str = "exit";
-
-fn main() {
-    print!("\x1B[2J\x1B[1;1H");
-
-    let stdin = std::io::stdin();
-    let mut stdout = std::io::stdout();
-    let mut buffer = Vec::new();
-
-    print!("{}", get_prompt());
-    stdout.flush().unwrap();
-
-    for byte in stdin.lock().bytes() {
-        let b = byte.expect("读取失败");
-
-        if b == b'\r' {
-            continue; // 跳过 Windows 下的 '\r'
-        }
-
-        if b == b'\n' {
-            let input = String::from_utf8_lossy(&buffer).trim().to_string();
-            if input == QUIT_COMMAND {
-                println!("\nBye!");
-                break;
+        if context.is_enter() {
+            let line = context.read_line();
+            let input = line.trim();
+            if input == "exit" {
+                return context::ContextSignal::EXIT;
             }
-            println!(); // 换行
-            buffer.clear();
-            print!("{}", get_prompt());
+            context.new_line();
         } else {
-            buffer.push(b);
-            stdout.write(&[b]).unwrap();
+            context.write_with_prompt(context.read_line());
         }
 
-        stdout.flush().unwrap();
-    }
+        context::ContextSignal::NONE
+    });
 }

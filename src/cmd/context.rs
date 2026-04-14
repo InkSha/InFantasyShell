@@ -2,7 +2,7 @@ use crossterm::{
     cursor::MoveToColumn,
     event::{Event, KeyCode, KeyEventKind, poll, read},
     execute,
-    terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode},
+    terminal::{Clear, ClearType},
 };
 use std::io::{self, Write};
 use std::time::Duration;
@@ -13,18 +13,17 @@ pub struct Context {
     enter: bool,
 }
 
-pub enum ContextSignal {
-    NONE,
-    EXIT,
-}
-
 impl Context {
     pub fn default() -> Self {
         Self {
             state: String::new(),
-            prompt: "INFS> ".into(),
+            prompt: "$ ".into(),
             enter: false,
         }
+    }
+
+    pub fn set_prompt<T: ToString>(&mut self, prompt: T) {
+        self.prompt = prompt.to_string();
     }
 
     pub fn read_line(&self) -> String {
@@ -89,23 +88,4 @@ impl Context {
     pub fn is_enter(&mut self) -> bool {
         self.state.ends_with("\n")
     }
-}
-
-pub type ExecuteHandle = fn(context: &mut Context) -> ContextSignal;
-
-pub fn execute(handle: ExecuteHandle) {
-    enable_raw_mode().unwrap();
-
-    let mut ctx = Context::default();
-
-    ctx.write_with_prompt("");
-
-    loop {
-        match handle(&mut ctx) {
-            ContextSignal::EXIT => break,
-            ContextSignal::NONE => (),
-        }
-    }
-
-    disable_raw_mode().unwrap();
 }

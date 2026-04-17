@@ -1,5 +1,5 @@
 use crossterm::{
-    cursor::MoveToColumn,
+    cursor::{MoveTo, MoveToColumn},
     event::{Event, KeyCode, KeyEventKind, poll, read},
     execute,
     terminal::{Clear, ClearType},
@@ -13,15 +13,17 @@ pub struct Context {
     enter: bool,
 }
 
-impl Context {
-    pub fn default() -> Self {
+impl Default for Context {
+    fn default() -> Self {
         Self {
             state: String::new(),
             prompt: "$ ".into(),
             enter: false,
         }
     }
+}
 
+impl Context {
     pub fn set_prompt<T: ToString>(&mut self, prompt: T) {
         self.prompt = prompt.to_string();
     }
@@ -58,13 +60,15 @@ impl Context {
     }
 
     pub fn new_line(&mut self) {
-        self.write_with_prompt(self.read_line());
+        print!("\n");
+        self.flush();
         self.state.clear();
+        self.enter = false;
         self.write_with_prompt("");
     }
 
     pub fn write<T: ToString>(&self, msg: T) {
-        self.clear();
+        self.clear_line();
 
         print!("{}", msg.to_string());
 
@@ -79,10 +83,16 @@ impl Context {
         io::stdout().flush().unwrap();
     }
 
-    pub fn clear(&self) {
+    pub fn clear_line(&self) {
         let mut stdout = io::stdout();
 
         execute!(stdout, MoveToColumn(0), Clear(ClearType::CurrentLine)).unwrap();
+    }
+
+    pub fn clear_screen(&self) {
+        let mut stdout = io::stdout();
+
+        execute!(stdout, MoveTo(0, 0), Clear(ClearType::All)).unwrap();
     }
 
     pub fn is_enter(&mut self) -> bool {

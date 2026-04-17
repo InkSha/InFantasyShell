@@ -5,9 +5,7 @@ pub fn register_command() -> command::Command {
 
     cmd.with_alias(vec!["quit"])
         .with_casesensitive(false)
-        .with_handle(|_| {
-            return command::CommandOutput::EXIT("".to_string());
-        });
+        .with_handle(|_, _| command::CommandOutput::EXIT(String::new()));
 
-    return cmd;
+    cmd
 }

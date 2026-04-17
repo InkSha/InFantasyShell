@@ -1,14 +1,17 @@
+use crate::cmd::runtime::ShellState;
+
 pub enum CommandOutput {
     NONE,
+    CLEAN,
     DISPLAY(String),
     REACTIVE,
     EXIT(String),
     ERROR(String),
 }
 
-pub type CommandHandle = fn(args: serde_json::Value) -> CommandOutput;
+pub type CommandHandle = fn(args: &[String], state: &mut ShellState) -> CommandOutput;
 
-pub fn command_default_handle(_: serde_json::Value) -> CommandOutput {
+pub fn command_default_handle(_: &[String], _: &mut ShellState) -> CommandOutput {
     CommandOutput::NONE
 }
 
@@ -20,15 +23,6 @@ pub struct Command {
 }
 
 impl Command {
-    pub fn default() -> Self {
-        Self {
-            name: String::new(),
-            alias: vec![],
-            handle: command_default_handle,
-            casesensitive: false,
-        }
-    }
-
     pub fn new<T: ToString>(name: T) -> Self {
         Self {
             name: name.to_string(),
@@ -65,7 +59,18 @@ impl Command {
         self
     }
 
-    pub fn execute(&self, args: serde_json::Value) -> CommandOutput {
-        (self.handle)(args)
+    pub fn execute(&self, args: &[String], state: &mut ShellState) -> CommandOutput {
+        (self.handle)(args, state)
+    }
+}
+
+impl Default for Command {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            alias: vec![],
+            handle: command_default_handle,
+            casesensitive: false,
+        }
     }
 }

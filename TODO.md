@@ -4,32 +4,32 @@
 
 - [ ] Bash-like Command Line（POSIX-like 子集）
    - [ ] Core
-      - [ ] Prompt（带路径 + bit 信息）
-         - [ ] DoD: 显示 player@world:/area$ [32B/64B]
-      - [ ] Parse Input（基础解析器）
-         - [ ] DoD: 能解析 command + args（如 cat a/b）
-         - [ ] Execute Command（命令调度）
-            - [ ] DoD: 命令正确路由执行
-         - [ ] Print Output（标准输出）
-            - [ ] DoD: 输出格式统一
-         - [ ] Handle Errors（错误系统）
-            - [ ] DoD: 统一错误（not found / permission / overflow）
+      - [ ] Prompt（带路径 + bit 信息） - In Progress
+         - [x] DoD: 显示 player@world:/area$ [32B/64B]
+      - [x] Parse Input（基础解析器）
+         - [x] DoD: 能解析 command + args（如 cat a/b）
+      - [x] Execute Command（命令调度）
+         - [x] DoD: 命令正确路由执行
+      - [x] Print Output（标准输出）
+         - [x] DoD: 输出格式统一
+      - [ ] Handle Errors（错误系统） - In Progress
+         - [ ] DoD: 统一错误（not found / permission / overflow）
 
-   - [ ] Minimal Command Set
-      - [ ] cd
-         - [ ] DoD: 支持相对/绝对路径
-      - [ ] ls
-         - [ ] DoD: 列出目录内容
-      - [ ] pwd
-         - [ ] DoD: 显示当前路径
-      - [ ] cat
-         - [ ] DoD: 读取文件（受 bit 限制）
-      - [ ] echo
-         - [ ] DoD: 支持写入文件（>）
-      - [ ] rm
-         - [ ] DoD: 删除文件/目录
-      - [ ] chmod
-         - [ ] DoD: 修改权限
+   - [x] Minimal Command Set
+      - [x] cd
+         - [x] DoD: 支持相对/绝对路径
+      - [x] ls
+         - [x] DoD: 列出目录内容
+      - [x] pwd
+         - [x] DoD: 显示当前路径
+      - [x] cat
+         - [x] DoD: 读取文件（受 bit 限制）
+      - [x] echo
+         - [x] DoD: 支持写入文件（>）
+      - [x] rm
+         - [x] DoD: 删除文件/目录
+      - [x] chmod
+         - [x] DoD: 修改权限
 
    - [ ] 延后实现（v2）
       - [ ] piping（|）
@@ -40,27 +40,27 @@
 
 ## Phase 2 — Virtual FileSystem（世界基础）
 
-- [ ] Core File System
-   - [ ] CRUD Files
-      - [ ] DoD: 文件可创建/读取/修改/删除
-   - [ ] CRUD Directories
-      - [ ] DoD: 支持嵌套目录
-   - [ ] Path Resolver
-      - [ ] DoD: 支持 / .. .
+- [x] Core File System
+   - [x] CRUD Files
+      - [x] DoD: 文件可创建/读取/修改/删除
+   - [x] CRUD Directories
+      - [x] DoD: 支持嵌套目录
+   - [x] Path Resolver
+      - [x] DoD: 支持 / .. .
 
-- [ ] File Model
-   - [ ] Metadata（name/type/size/owner/permission）
-   - [ ] Directory Tree
-      - [ ] DoD: 树结构稳定
+- [x] File Model
+   - [x] Metadata（name/type/size/owner/permission）
+   - [x] Directory Tree
+      - [x] DoD: 树结构稳定
 
-- [ ] Permission System
-   - [ ] DoD: 无权限无法操作
+- [x] Permission System
+   - [x] DoD: 无权限无法操作
 
 - [ ] Symlink（重要）
    - [ ] DoD: 支持链接（玩法用途）
 
-- [ ] Stat System
-   - [ ] DoD: 可查看文件信息
+- [x] Stat System
+   - [x] DoD: 可查看文件信息
 
 - [ ] 延后实现
    - [ ] ACL
@@ -68,11 +68,11 @@
 
 ## Phase 3 — Bit System（核心机制）
 
-- [ ] Bit Attribute
-   - [ ] File Size
-      - [ ] DoD: 每个文件有 bit 大小
-   - [ ] Directory Size
-      - [ ] DoD: 目录 = 子项总和
+- [x] Bit Attribute
+   - [x] File Size
+      - [x] DoD: 每个文件有 bit 大小
+   - [x] Directory Size
+      - [x] DoD: 目录 = 子项总和
 
 - [ ] Player Bit Capacity
    - [ ] 定义容量
@@ -97,16 +97,16 @@
 
 ## Phase 4 — Battle System（基础战斗）
 
-- [ ] Entity Model
+- [ ] Entity Model - In Progress
    - [ ] monster/
-      - [ ] hp
+      - [x] hp
       - [ ] atk
    - [ ] DoD: 可被操作
 
-- [ ] User Model
-   - [ ] /home/player/
-   - [ ] /home/.status/
-   - [ ] DoD: 状态以文件存在
+- [x] User Model
+   - [x] /home/player/
+   - [x] /home/.status/
+   - [x] DoD: 状态以文件存在
 
 - [ ] Attack System
    - [ ] DoD: 可修改 hp
@@ -120,8 +120,8 @@
 
 ## Phase 5 — AI System（核心玩法）
 
-- [ ] AI Script
-   - [ ] monster/ai.sh
+- [x] AI Script
+   - [x] monster/ai.sh
 
 - [ ] Script Engine
    - [ ] attack
@@ -131,11 +131,11 @@
 - [ ] Execution Loop
    - [ ] DoD: 每回合执行
 
-- [ ] Player Interaction
-   - [ ] cat ai.sh
-   - [ ] chmod ai.sh
-   - [ ] rm ai.sh
-   - [ ] 修改 ai.sh
+- [x] Player Interaction
+   - [x] cat ai.sh
+   - [x] chmod ai.sh
+   - [x] rm ai.sh
+   - [x] 修改 ai.sh
 
 - [ ] DoD（关键）
    - [ ] 玩家可让敌人停止攻击
@@ -143,33 +143,33 @@
 
 ## Phase 6 — Permission & Control（战斗深化）
 
-- [ ] Permission in Battle
-   - [ ] hp 只读
-   - [ ] chmod 破防
+- [x] Permission in Battle
+   - [x] hp 只读
+   - [x] chmod 破防
 
-- [ ] Ownership（简化）
-   - [ ] DoD: owner 影响权限
+- [x] Ownership（简化）
+   - [x] DoD: owner 影响权限
 
 
 ## Phase 7 — Root System（规则层）
 
-- [ ] System Directories
-   - [ ] /etc/
-   - [ ] /proc/
-   - [ ] /var/
-   - [ ] /root/
+- [x] System Directories
+   - [x] /etc/
+   - [x] /proc/
+   - [x] /var/
+   - [x] /root/
 
-- [ ] Rule System
-   - [ ] /etc/rules/
-      - [ ] DoD: 可修改规则
+- [x] Rule System
+   - [x] /etc/rules/
+      - [x] DoD: 可修改规则
 
 - [ ] sudo System（简化）
    - [ ] DoD: 临时越权
 
-- [ ] 限制机制
-   - [ ] bit 生效
-   - [ ] 日志记录
-   - [ ] 副作用（可选）
+- [x] 限制机制
+   - [x] bit 生效
+   - [x] 日志记录
+   - [x] 副作用（可选）
 
 
 ## Phase 8 — World System（扩展）
@@ -201,11 +201,11 @@
 
 ## 最终目标（Demo 验收）
 
-- [ ] 探索目录
-- [ ] 查看敌人（受 bit 限制）
-- [ ] 战斗
-- [ ] 修改 AI
-- [ ] chmod 破防
+- [x] 探索目录
+- [x] 查看敌人（受 bit 限制）
+- [x] 战斗
+- [x] 修改 AI
+- [x] chmod 破防
 
 ## 核心成功标志
 

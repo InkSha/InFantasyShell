@@ -5,6 +5,7 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 pub mod command;
 pub mod context;
 pub mod inbuilt;
+mod output;
 mod parser;
 pub mod runtime;
 

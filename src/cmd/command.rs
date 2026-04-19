@@ -4,6 +4,8 @@ pub enum CommandOutput {
     NONE,
     CLEAN,
     DISPLAY(String),
+    // TODO: implement reactive commands
+    #[allow(dead_code)]
     REACTIVE,
     EXIT(String),
     ERROR(String),

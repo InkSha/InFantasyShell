@@ -4,13 +4,16 @@ use crossterm::{
     execute,
     terminal::{Clear, ClearType},
 };
-use std::io::{self, Write};
+use std::io;
 use std::time::Duration;
+
+use crate::cmd::output;
 
 pub struct Context {
     prompt: String,
     state: String,
     enter: bool,
+    output: output::Output,
 }
 
 impl Default for Context {
@@ -19,6 +22,7 @@ impl Default for Context {
             state: String::new(),
             prompt: "$ ".into(),
             enter: false,
+            output: output::Output::new(),
         }
     }
 }
@@ -60,8 +64,7 @@ impl Context {
     }
 
     pub fn new_line(&mut self) {
-        print!("\n");
-        self.flush();
+        self.output.write("\n");
         self.state.clear();
         self.enter = false;
         self.write_with_prompt("");
@@ -70,17 +73,11 @@ impl Context {
     pub fn write<T: ToString>(&self, msg: T) {
         self.clear_line();
 
-        print!("{}", msg.to_string());
-
-        self.flush();
+        self.output.write(msg);
     }
 
     pub fn write_with_prompt<T: ToString>(&self, msg: T) {
         self.write(format!("{}{}", self.prompt, msg.to_string()));
-    }
-
-    pub fn flush(&self) {
-        io::stdout().flush().unwrap();
     }
 
     pub fn clear_line(&self) {

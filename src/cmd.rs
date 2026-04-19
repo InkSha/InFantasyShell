@@ -29,8 +29,8 @@ impl Cmd {
             .expect("shell state should initialize with the default VFS world");
         ctx.set_prompt(shell_state.render_prompt(self.prompt.as_str()));
 
-        ctx.write_with_prompt("");
         ctx.clear_screen();
+        ctx.write_with_prompt("");
 
         loop {
             ctx.read();

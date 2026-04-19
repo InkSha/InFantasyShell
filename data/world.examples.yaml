@@ -1,0 +1,128 @@
+meta:
+  name: InFantasyShell World
+  datetime: 0000-00-00T00:00:00Z
+
+settings:
+  seed: 1234567890abcdef
+  max_players: 10
+  default_spawn: /home/player
+
+users:
+  - name: player
+    password: password123
+  - name: partner1
+    password: partner1password
+  - name: npc1
+    password: npc1password
+  - name: npc2
+    password: npc2password
+
+groups:
+  - name: players
+    members: [player, partner1]
+  - name: npcs
+    members: [npc1, npc2]
+
+# 采用树形结构表示文件系统
+# 有 children 字段表示当前路径是一个目录
+# 有 content 字段表示当前路径是一个文件
+# 默认权限为 644，所有者为 root
+# 允许继承权限和所有者，如果没有指定则继承父目录的权限和所有者
+# 文件路径作为文件系统的唯一标识，不能重复
+# 文件路径以 / 开头，表示从根目录开始
+name: /
+permissions: 0644
+owner: root
+group: root
+children:
+  - name: etc
+  - name: var
+  - name: tmp
+  - name: dev
+  - name: proc
+  - name: sys
+  - name: mnt
+  - name: bin
+  - name: media
+  - name: opt
+  - name: run
+  - name: home
+    children:
+      - name: player
+        owner: player
+        children:
+          - name: .meta
+            children:
+              - name: name
+                content: player
+          - name: .skills
+            children:
+              - name: attack.sh
+                content: |
+                  #!/bin/sh
+                  echo "Attack skill activated!"
+              - name: defense.sh
+                content: |
+                  #!/bin/sh
+                  echo "Defense skill activated!"
+          - name: memory
+            children: []
+          - name: resume.md
+            content: |
+              # my resume
+
+              - Experience: Game Developer at XYZ Company
+              - Skills: Python, C++, Rust
+              - Education: Bachelor's in Computer Science
+          - name: notes.md
+            content: |
+              # notes
+
+              - Learn Rust
+              - Build a game
+              - Have fun!
+      - name: npc1
+        owner: npc1
+        children: []
+      - name: npc2
+        owner: npc2
+        children: []
+  - name: root
+    children:
+      # 造物主所创建的生命
+      - name: monster
+        children:
+          - name: goblin
+            children:
+              - name: ai.sh
+                permissions: 0755
+                owner: goblin
+                group: goblin
+                content: |
+                  #!/bin/sh
+                  echo "Goblin AI activated!"
+              - name: hp
+                content: "50"
+          - name: slime
+            children:
+              - name: ai.sh
+                permissions: 0755
+                owner: slime
+                group: slime
+                content: |
+                  #!/bin/sh
+                  echo "Slime AI activated!"
+              - name: hp
+                content: "100"
+
+  - name: world
+    permissions: 0755
+    children:
+      - name: forest
+        children:
+          - name: clearing
+
+      - name: mountain
+        children:
+          - name: copper
+            content: copper

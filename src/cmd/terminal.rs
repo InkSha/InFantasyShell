@@ -2,21 +2,21 @@ use crossterm::{
     cursor::{MoveTo, MoveToColumn},
     event::{Event, KeyCode, KeyEventKind, poll, read},
     execute,
-    terminal::{Clear, ClearType},
+    terminal::{Clear, ClearType, size},
 };
 use std::io;
 use std::time::Duration;
 
 use crate::cmd::output;
 
-pub struct Context {
+pub struct Terminal {
     prompt: String,
     state: String,
     enter: bool,
     output: output::Output,
 }
 
-impl Default for Context {
+impl Default for Terminal {
     fn default() -> Self {
         Self {
             state: String::new(),
@@ -27,9 +27,16 @@ impl Default for Context {
     }
 }
 
-impl Context {
+impl Terminal {
     pub fn set_prompt<T: ToString>(&mut self, prompt: T) {
         self.prompt = prompt.to_string();
+    }
+
+    pub fn get_size() -> (u16, u16) {
+        match size() {
+            Ok((w, h)) => (w, h),
+            Err(_) => (80, 24),
+        }
     }
 
     pub fn read_line(&self) -> String {

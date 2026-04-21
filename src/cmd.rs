@@ -3,11 +3,11 @@ use std::{collections::HashMap, sync::Arc};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
 pub mod command;
-pub mod context;
 pub mod inbuilt;
 mod output;
 mod parser;
 pub mod runtime;
+pub mod terminal;
 
 pub struct Cmd {
     pub commands: HashMap<String, Arc<command::Command>>,
@@ -25,7 +25,7 @@ impl Cmd {
     pub fn run(&self) {
         enable_raw_mode().unwrap();
 
-        let mut ctx = context::Context::default();
+        let mut ctx = terminal::Terminal::default();
         let mut shell_state = runtime::ShellState::new("player")
             .expect("shell state should initialize with the default VFS world");
         ctx.set_prompt(shell_state.render_prompt(self.prompt.as_str()));

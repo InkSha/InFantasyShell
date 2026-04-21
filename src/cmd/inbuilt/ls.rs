@@ -1,4 +1,4 @@
-use crate::cmd::command;
+use crate::cmd::{command, output::format};
 use crate::vfs::NodeType;
 
 pub fn register_command() -> command::Command {
@@ -8,17 +8,18 @@ pub fn register_command() -> command::Command {
         let path = args.first().map(String::as_str).unwrap_or(".");
         match state.vfs.list_dir(state.cwd, path, state.actor.as_str()) {
             Ok(entries) => {
-                let output = entries
+                let items = entries
                     .into_iter()
                     .map(|entry| {
                         let suffix = match entry.node_type {
                             NodeType::Directory => "/",
                             NodeType::File => "",
                         };
-                        format!("{}{} [{}] {}B", entry.name, suffix, entry.permissions, entry.size)
+                        format!("{}{}", entry.name, suffix)
                     })
-                    .collect::<Vec<_>>()
-                    .join("\n");
+                    .collect::<Vec<_>>();
+
+                let output = format::rows_output(items);
 
                 command::CommandOutput::DISPLAY(output)
             }

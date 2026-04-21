@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 mod color;
-mod format;
+pub mod format;
 
 pub struct Output {}
 

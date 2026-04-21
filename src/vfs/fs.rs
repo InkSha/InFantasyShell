@@ -71,15 +71,18 @@ impl Permissions {
         let owner = digits
             .next()
             .and_then(|ch| ch.to_digit(8))
-            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))? as u8;
+            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))?
+            as u8;
         let group = digits
             .next()
             .and_then(|ch| ch.to_digit(8))
-            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))? as u8;
+            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))?
+            as u8;
         let other = digits
             .next()
             .and_then(|ch| ch.to_digit(8))
-            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))? as u8;
+            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))?
+            as u8;
 
         Ok(Self {
             owner: Self::bits_from_digit(owner),
@@ -223,6 +226,48 @@ impl Vfs {
             Permissions::file_default(),
         )?;
         vfs.create_file_absolute(
+            "/home/player/aaaaaa",
+            "player",
+            "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
+                .to_string(),
+            Permissions::file_default(),
+        )?;
+        vfs.create_file_absolute(
+            "/home/player/bbbbbb",
+            "player",
+            "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
+                .to_string(),
+            Permissions::file_default(),
+        )?;
+        vfs.create_file_absolute(
+            "/home/player/ffffff",
+            "player",
+            "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
+                .to_string(),
+            Permissions::file_default(),
+        )?;
+        vfs.create_file_absolute(
+            "/home/player/zzzzzz",
+            "player",
+            "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
+                .to_string(),
+            Permissions::file_default(),
+        )?;
+        vfs.create_file_absolute(
+            "/home/player/yyyyyy",
+            "player",
+            "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
+                .to_string(),
+            Permissions::file_default(),
+        )?;
+        vfs.create_file_absolute(
+            "/home/player/qqqqqqq",
+            "player",
+            "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
+                .to_string(),
+            Permissions::file_default(),
+        )?;
+        vfs.create_file_absolute(
             "/home/player/notes.txt",
             "player",
             "Bits are your carrying capacity.\n".to_string(),
@@ -297,11 +342,18 @@ impl Vfs {
     pub fn list_dir(&self, cwd: NodeId, path: &str, actor: &str) -> Result<Vec<DirEntry>, FsError> {
         let dir_id = self.resolve_node(cwd, path, actor)?;
         let path_string = self.absolute_path(dir_id)?;
-        self.require_directory_permission(dir_id, actor, path_string.as_str(), DirectoryAction::List)?;
+        self.require_directory_permission(
+            dir_id,
+            actor,
+            path_string.as_str(),
+            DirectoryAction::List,
+        )?;
 
         let node = self.node(dir_id)?;
         let children = match &node.kind {
-            NodeKind::Directory(directory) => directory.children.values().copied().collect::<Vec<_>>(),
+            NodeKind::Directory(directory) => {
+                directory.children.values().copied().collect::<Vec<_>>()
+            }
             NodeKind::File(_) => return Err(FsError::NotDirectory(path_string)),
         };
 
@@ -339,13 +391,23 @@ impl Vfs {
     ) -> Result<(), FsError> {
         let (parent_id, name) = self.resolve_parent(cwd, path, actor)?;
         let parent_path = self.absolute_path(parent_id)?;
-        self.require_directory_permission(parent_id, actor, parent_path.as_str(), DirectoryAction::Write)?;
+        self.require_directory_permission(
+            parent_id,
+            actor,
+            parent_path.as_str(),
+            DirectoryAction::Write,
+        )?;
 
         let existing_id = self.lookup_child(parent_id, &name)?;
         match existing_id {
             Some(node_id) => {
                 let existing_path = self.absolute_path(node_id)?;
-                self.require_file_permission(node_id, actor, existing_path.as_str(), FileAction::Write)?;
+                self.require_file_permission(
+                    node_id,
+                    actor,
+                    existing_path.as_str(),
+                    FileAction::Write,
+                )?;
 
                 let node = self.node_mut(node_id)?;
                 match &mut node.kind {
@@ -357,7 +419,13 @@ impl Vfs {
                 }
             }
             None => {
-                self.create_file_under(parent_id, &name, actor, content, Permissions::file_default())?;
+                self.create_file_under(
+                    parent_id,
+                    &name,
+                    actor,
+                    content,
+                    Permissions::file_default(),
+                )?;
                 Ok(())
             }
         }
@@ -366,7 +434,12 @@ impl Vfs {
     pub fn create_dir(&mut self, cwd: NodeId, path: &str, actor: &str) -> Result<(), FsError> {
         let (parent_id, name) = self.resolve_parent(cwd, path, actor)?;
         let parent_path = self.absolute_path(parent_id)?;
-        self.require_directory_permission(parent_id, actor, parent_path.as_str(), DirectoryAction::Write)?;
+        self.require_directory_permission(
+            parent_id,
+            actor,
+            parent_path.as_str(),
+            DirectoryAction::Write,
+        )?;
         self.create_directory_under(parent_id, &name, actor, Permissions::directory_default())?;
         Ok(())
     }
@@ -383,7 +456,12 @@ impl Vfs {
             .parent
             .ok_or(FsError::CannotRemoveRoot)?;
         let parent_path = self.absolute_path(parent_id)?;
-        self.require_directory_permission(parent_id, actor, parent_path.as_str(), DirectoryAction::Write)?;
+        self.require_directory_permission(
+            parent_id,
+            actor,
+            parent_path.as_str(),
+            DirectoryAction::Write,
+        )?;
 
         if let NodeKind::Directory(directory) = &self.node(node_id)?.kind {
             if !directory.children.is_empty() {
@@ -424,7 +502,12 @@ impl Vfs {
     pub fn change_dir(&self, cwd: NodeId, path: &str, actor: &str) -> Result<NodeId, FsError> {
         let node_id = self.resolve_node(cwd, path, actor)?;
         let path_string = self.absolute_path(node_id)?;
-        self.require_directory_permission(node_id, actor, path_string.as_str(), DirectoryAction::Traverse)?;
+        self.require_directory_permission(
+            node_id,
+            actor,
+            path_string.as_str(),
+            DirectoryAction::Traverse,
+        )?;
         Ok(node_id)
     }
 
@@ -451,7 +534,11 @@ impl Vfs {
             return Ok(self.root);
         }
 
-        let mut current = if trimmed.starts_with('/') { self.root } else { cwd };
+        let mut current = if trimmed.starts_with('/') {
+            self.root
+        } else {
+            cwd
+        };
         let segments = trimmed
             .split('/')
             .filter(|segment| !segment.is_empty())
@@ -624,7 +711,12 @@ impl Vfs {
         Ok(new_id)
     }
 
-    fn insert_child(&mut self, parent_id: NodeId, name: &str, child_id: NodeId) -> Result<(), FsError> {
+    fn insert_child(
+        &mut self,
+        parent_id: NodeId,
+        name: &str,
+        child_id: NodeId,
+    ) -> Result<(), FsError> {
         let parent_path = self.absolute_path(parent_id)?;
         match &mut self.node_mut(parent_id)?.kind {
             NodeKind::Directory(directory) => {
@@ -655,8 +747,12 @@ impl Vfs {
 
         let allowed = match (&node.kind, action) {
             (NodeKind::Directory(_), DirectoryAction::Traverse) => permissions.execute,
-            (NodeKind::Directory(_), DirectoryAction::List) => permissions.read && permissions.execute,
-            (NodeKind::Directory(_), DirectoryAction::Write) => permissions.write && permissions.execute,
+            (NodeKind::Directory(_), DirectoryAction::List) => {
+                permissions.read && permissions.execute
+            }
+            (NodeKind::Directory(_), DirectoryAction::Write) => {
+                permissions.write && permissions.execute
+            }
             (NodeKind::File(_), _) => return Err(FsError::NotDirectory(path.to_string())),
         };
 
@@ -844,8 +940,13 @@ mod tests {
             .resolve_node(vfs.root_id(), "/monster/slime", "root")
             .expect("monster directory should resolve");
 
-        vfs.chmod(monster, "hp", "root", Permissions::from_octal("600").expect("mode should parse"))
-            .expect("root should be able to chmod");
+        vfs.chmod(
+            monster,
+            "hp",
+            "root",
+            Permissions::from_octal("600").expect("mode should parse"),
+        )
+        .expect("root should be able to chmod");
 
         let error = vfs
             .read_file(vfs.root_id(), "/monster/slime/hp", "player")
@@ -853,10 +954,7 @@ mod tests {
 
         assert!(matches!(
             error,
-            FsError::PermissionDenied {
-                action: "read",
-                ..
-            }
+            FsError::PermissionDenied { action: "read", .. }
         ));
     }
 

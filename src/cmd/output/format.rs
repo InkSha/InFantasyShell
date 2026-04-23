@@ -2,8 +2,6 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::cmd::terminal::Terminal;
 
-const COL_GAP: &'static str = "  ";
-
 pub fn list_output<T: ToString>(items: Vec<T>) -> String {
     items
         .iter()
@@ -32,27 +30,28 @@ pub fn rows_output<T: ToString>(items: Vec<T>) -> String {
         // default by ascii
         a.cmp(b)
     });
-    let gap = UnicodeWidthStr::width(COL_GAP);
 
-    let mut i = 1;
-    while i * (max_len + gap) + gap < term_width.into() {
-        i += 1;
+    let mut i = strs.len();
+    while i * max_len + i - 1 > term_width.into() {
+        i -= 1;
     }
 
     let mut lines: Vec<String> = vec![];
-    // floor
-    let part_len = strs.len() / (i + 1);
+    let rows = strs.len() / i + (strs.len() % i != 0) as usize;
 
-    println!("{} {} {} {}", i, part_len, strs.len(), term_width);
+    for row in 0..rows {
+        let mut line: Vec<String> = vec![];
 
-    for order in 0..=part_len {
-        let mut line: Vec<&str> = vec![];
-        for index in 0..=i {
-            if let Some(l) = strs.get((order * part_len) + index) {
-                line.push(l);
+        for col in 0..i {
+            let idx = col * rows + row;
+
+            if let Some(item) = strs.get(idx) {
+                // push space to align
+                let space = " ".repeat(max_len - UnicodeWidthStr::width(item.as_str()));
+                line.push(format!("{}{}", item, space));
             }
         }
-        lines.push(line.join(COL_GAP));
+        lines.push(line.join(" "));
     }
 
     return lines.join("\n");

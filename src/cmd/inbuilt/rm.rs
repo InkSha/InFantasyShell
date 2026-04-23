@@ -8,7 +8,11 @@ pub fn register_command() -> command::Command {
             return command::CommandOutput::ERROR("rm requires a path".to_string());
         };
 
-        match state.vfs.remove(state.cwd, path.as_str(), state.actor.as_str()) {
+        match state
+            .system
+            .storage
+            .remove(state.cwd, path.as_str(), state.actor.as_str())
+        {
             Ok(()) => command::CommandOutput::NONE,
             Err(error) => command::CommandOutput::ERROR(error.to_string()),
         }

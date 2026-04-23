@@ -9,7 +9,8 @@ pub fn register_command() -> command::Command {
         };
 
         match state
-            .vfs
+            .system
+            .storage
             .read_file(state.cwd, path.as_str(), state.actor.as_str())
         {
             Ok(content) => command::CommandOutput::DISPLAY(content),

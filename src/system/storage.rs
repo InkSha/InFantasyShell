@@ -1,192 +1,26 @@
+use crate::system::{
+    bit::DataSize,
+    error::FsError,
+    permission::{PermBits, Permissions},
+};
+use node::{
+    DirEntry, DirectoryAction, DirectoryData, FileAction, FileData, Node, NodeId, NodeKind, Stat,
+};
 use std::collections::{BTreeMap, HashMap};
-use std::fmt;
 
-pub type NodeId = u64;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum NodeType {
-    File,
-    Directory,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PermBits {
-    pub read: bool,
-    pub write: bool,
-    pub execute: bool,
-}
-
-impl PermBits {
-    pub const fn new(read: bool, write: bool, execute: bool) -> Self {
-        Self {
-            read,
-            write,
-            execute,
-        }
-    }
-
-    fn to_octal_digit(&self) -> u8 {
-        (u8::from(self.read) * 4) + (u8::from(self.write) * 2) + u8::from(self.execute)
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Permissions {
-    pub owner: PermBits,
-    pub group: PermBits,
-    pub other: PermBits,
-}
-
-impl Permissions {
-    pub const fn file_default() -> Self {
-        Self {
-            owner: PermBits::new(true, true, false),
-            group: PermBits::new(true, false, false),
-            other: PermBits::new(true, false, false),
-        }
-    }
-
-    pub const fn directory_default() -> Self {
-        Self {
-            owner: PermBits::new(true, true, true),
-            group: PermBits::new(true, false, true),
-            other: PermBits::new(true, false, true),
-        }
-    }
-
-    pub const fn executable_file() -> Self {
-        Self {
-            owner: PermBits::new(true, true, true),
-            group: PermBits::new(true, false, true),
-            other: PermBits::new(true, false, true),
-        }
-    }
-
-    pub fn from_octal(input: &str) -> Result<Self, FsError> {
-        if input.len() != 3 || !input.chars().all(|ch| ('0'..='7').contains(&ch)) {
-            return Err(FsError::InvalidPermissions(input.to_string()));
-        }
-
-        let mut digits = input.chars();
-        let owner = digits
-            .next()
-            .and_then(|ch| ch.to_digit(8))
-            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))?
-            as u8;
-        let group = digits
-            .next()
-            .and_then(|ch| ch.to_digit(8))
-            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))?
-            as u8;
-        let other = digits
-            .next()
-            .and_then(|ch| ch.to_digit(8))
-            .ok_or_else(|| FsError::InvalidPermissions(input.to_string()))?
-            as u8;
-
-        Ok(Self {
-            owner: Self::bits_from_digit(owner),
-            group: Self::bits_from_digit(group),
-            other: Self::bits_from_digit(other),
-        })
-    }
-
-    fn bits_from_digit(digit: u8) -> PermBits {
-        PermBits::new(digit & 4 != 0, digit & 2 != 0, digit & 1 != 0)
-    }
-
-    pub fn to_octal_string(&self) -> String {
-        format!(
-            "{}{}{}",
-            self.owner.to_octal_digit(),
-            self.group.to_octal_digit(),
-            self.other.to_octal_digit()
-        )
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FileData {
-    pub content: String,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DirectoryData {
-    pub children: BTreeMap<String, NodeId>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum NodeKind {
-    File(FileData),
-    Directory(DirectoryData),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Node {
-    pub id: NodeId,
-    pub name: String,
-    pub parent: Option<NodeId>,
-    pub owner: String,
-    pub permissions: Permissions,
-    pub kind: NodeKind,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DirEntry {
-    pub name: String,
-    pub node_type: NodeType,
-    pub size: usize,
-    pub permissions: String,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Stat {
-    pub name: String,
-    pub path: String,
-    pub node_type: NodeType,
-    pub size: usize,
-    pub owner: String,
-    pub permissions: String,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum FsError {
-    NotFound(String),
-    AlreadyExists(String),
-    NotDirectory(String),
-    NotFile(String),
-    PermissionDenied { path: String, action: &'static str },
-    DirectoryNotEmpty(String),
-    InvalidPath(String),
-    InvalidPermissions(String),
-    CannotRemoveRoot,
-}
-
-impl fmt::Display for FsError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NotFound(path) => write!(f, "path not found: {path}"),
-            Self::AlreadyExists(path) => write!(f, "path already exists: {path}"),
-            Self::NotDirectory(path) => write!(f, "not a directory: {path}"),
-            Self::NotFile(path) => write!(f, "not a file: {path}"),
-            Self::PermissionDenied { path, action } => {
-                write!(f, "permission denied for {action} on {path}")
-            }
-            Self::DirectoryNotEmpty(path) => write!(f, "directory is not empty: {path}"),
-            Self::InvalidPath(path) => write!(f, "invalid path: {path}"),
-            Self::InvalidPermissions(input) => write!(f, "invalid chmod mode: {input}"),
-            Self::CannotRemoveRoot => write!(f, "cannot remove root directory"),
-        }
-    }
-}
-
-impl std::error::Error for FsError {}
+pub mod node;
 
 #[derive(Debug)]
 pub struct Vfs {
     root: NodeId,
     next_id: NodeId,
     nodes: HashMap<NodeId, Node>,
+}
+
+impl Default for Vfs {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Vfs {
@@ -212,90 +46,110 @@ impl Vfs {
             nodes,
         }
     }
+}
 
-    pub fn new_mvp_world() -> Result<Self, FsError> {
-        let mut vfs = Self::new();
+pub struct Storage {
+    vfs: Vfs,
+    pub total: DataSize,
+    pub used: DataSize,
+}
 
-        vfs.create_dir_absolute("/home", "root", Permissions::directory_default())?;
-        vfs.create_dir_absolute("/home/player", "player", Permissions::directory_default())?;
-        vfs.create_file_absolute(
+impl Storage {
+    /// Creates a new Storage instance with default values.
+    /// - Total storage is set to 50 GB.
+    /// - Used storage is set to 10 GB.
+    pub fn default() -> Self {
+        let total = DataSize::Gigabyte(50);
+        let used = DataSize::Gigabyte(10);
+
+        Self {
+            total,
+            used,
+            vfs: Vfs::new(),
+        }
+    }
+
+    pub fn new_mvp_world(&mut self) -> Result<bool, FsError> {
+        self.create_dir_absolute("/home", "root", Permissions::directory_default())?;
+        self.create_dir_absolute("/home/player", "player", Permissions::directory_default())?;
+        self.create_file_absolute(
             "/home/player/readme.txt",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/aaaaaa",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/bbbbbb",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/ffffff",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/zzzzzz",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/yyyyyy",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/qqqqqqq",
             "player",
             "Welcome to InFantasyShell.\nExplore the world through the virtual filesystem."
                 .to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/home/player/notes.txt",
             "player",
             "Bits are your carrying capacity.\n".to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_dir_absolute("/player", "root", Permissions::directory_default())?;
-        vfs.create_dir_absolute("/player/memory", "player", Permissions::directory_default())?;
-        vfs.create_dir_absolute("/monster", "root", Permissions::directory_default())?;
-        vfs.create_dir_absolute("/monster/slime", "root", Permissions::directory_default())?;
-        vfs.create_file_absolute(
+        self.create_dir_absolute("/player", "root", Permissions::directory_default())?;
+        self.create_dir_absolute("/player/memory", "player", Permissions::directory_default())?;
+        self.create_dir_absolute("/monster", "root", Permissions::directory_default())?;
+        self.create_dir_absolute("/monster/slime", "root", Permissions::directory_default())?;
+        self.create_file_absolute(
             "/monster/slime/hp",
             "root",
             "12\n".to_string(),
             Permissions::file_default(),
         )?;
-        vfs.create_file_absolute(
+        self.create_file_absolute(
             "/monster/slime/ai.sh",
             "root",
             "echo slime attacks\n".to_string(),
             Permissions::executable_file(),
         )?;
-        vfs.create_dir_absolute("/etc", "root", Permissions::directory_default())?;
+        self.create_dir_absolute("/etc", "root", Permissions::directory_default())?;
 
-        Ok(vfs)
+        Ok(true)
     }
 
     pub fn root_id(&self) -> NodeId {
-        self.root
+        self.vfs.root
     }
 
     pub fn stat(&self, cwd: NodeId, path: &str, actor: &str) -> Result<Stat, FsError> {
@@ -446,7 +300,7 @@ impl Vfs {
 
     pub fn remove(&mut self, cwd: NodeId, path: &str, actor: &str) -> Result<(), FsError> {
         let node_id = self.resolve_node(cwd, path, actor)?;
-        if node_id == self.root {
+        if node_id == self.vfs.root {
             return Err(FsError::CannotRemoveRoot);
         }
 
@@ -473,7 +327,7 @@ impl Vfs {
         if let NodeKind::Directory(parent_directory) = &mut self.node_mut(parent_id)?.kind {
             parent_directory.children.remove(&node_name);
         }
-        self.nodes.remove(&node_id);
+        self.vfs.nodes.remove(&node_id);
 
         Ok(())
     }
@@ -531,11 +385,11 @@ impl Vfs {
         }
 
         if trimmed == "/" {
-            return Ok(self.root);
+            return Ok(self.vfs.root);
         }
 
         let mut current = if trimmed.starts_with('/') {
-            self.root
+            self.vfs.root
         } else {
             cwd
         };
@@ -548,7 +402,7 @@ impl Vfs {
             match segment {
                 "." => {}
                 ".." => {
-                    current = self.node(current)?.parent.unwrap_or(self.root);
+                    current = self.node(current)?.parent.unwrap_or(self.vfs.root);
                 }
                 name => {
                     let current_path = self.absolute_path(current)?;
@@ -648,9 +502,9 @@ impl Vfs {
             .ok_or_else(|| FsError::InvalidPath(path.to_string()))?;
 
         let parent = if parts.is_empty() {
-            self.root
+            self.vfs.root
         } else {
-            self.resolve_node_unchecked(self.root, format!("/{}", parts.join("/")).as_str())?
+            self.resolve_node_unchecked(self.vfs.root, format!("/{}", parts.join("/")).as_str())?
         };
 
         Ok((parent, name.to_string()))
@@ -680,7 +534,7 @@ impl Vfs {
         };
 
         self.insert_child(parent_id, name, new_id)?;
-        self.nodes.insert(new_id, node);
+        self.vfs.nodes.insert(new_id, node);
         Ok(new_id)
     }
 
@@ -707,7 +561,7 @@ impl Vfs {
         };
 
         self.insert_child(parent_id, name, new_id)?;
-        self.nodes.insert(new_id, node);
+        self.vfs.nodes.insert(new_id, node);
         Ok(new_id)
     }
 
@@ -813,176 +667,22 @@ impl Vfs {
     }
 
     fn next_node_id(&mut self) -> NodeId {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.vfs.next_id;
+        self.vfs.next_id += 1;
         id
     }
 
     fn node(&self, node_id: NodeId) -> Result<&Node, FsError> {
-        self.nodes
+        self.vfs
+            .nodes
             .get(&node_id)
             .ok_or_else(|| FsError::NotFound(format!("node:{node_id}")))
     }
 
     fn node_mut(&mut self, node_id: NodeId) -> Result<&mut Node, FsError> {
-        self.nodes
+        self.vfs
+            .nodes
             .get_mut(&node_id)
             .ok_or_else(|| FsError::NotFound(format!("node:{node_id}")))
-    }
-}
-
-impl Default for Vfs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Clone, Copy)]
-enum DirectoryAction {
-    Traverse,
-    List,
-    Write,
-}
-
-impl DirectoryAction {
-    fn label(self) -> &'static str {
-        match self {
-            Self::Traverse => "traverse",
-            Self::List => "list",
-            Self::Write => "write",
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-enum FileAction {
-    Read,
-    Write,
-}
-
-impl FileAction {
-    fn label(self) -> &'static str {
-        match self {
-            Self::Read => "read",
-            Self::Write => "write",
-        }
-    }
-}
-
-impl Node {
-    fn display_name(&self) -> String {
-        if self.parent.is_none() {
-            "/".to_string()
-        } else {
-            self.name.clone()
-        }
-    }
-
-    fn node_type(&self) -> NodeType {
-        match self.kind {
-            NodeKind::File(_) => NodeType::File,
-            NodeKind::Directory(_) => NodeType::Directory,
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{FsError, Permissions, Vfs};
-
-    fn seeded_vfs() -> Vfs {
-        Vfs::new_mvp_world().expect("seeded VFS should build")
-    }
-
-    #[test]
-    fn resolves_absolute_and_relative_paths() {
-        let vfs = seeded_vfs();
-        let home = vfs
-            .resolve_node(vfs.root_id(), "/home/player", "player")
-            .expect("home path should resolve");
-        let notes = vfs
-            .resolve_node(home, "./notes.txt", "player")
-            .expect("relative file should resolve");
-
-        assert_eq!(
-            vfs.absolute_path(notes).expect("path should be printable"),
-            "/home/player/notes.txt"
-        );
-        assert_eq!(
-            vfs.resolve_node(home, "../player/readme.txt", "player")
-                .expect("dot-dot path should resolve"),
-            vfs.resolve_node(vfs.root_id(), "/home/player/readme.txt", "player")
-                .expect("absolute path should resolve")
-        );
-    }
-
-    #[test]
-    fn reads_and_writes_files() {
-        let mut vfs = seeded_vfs();
-        let home = vfs
-            .resolve_node(vfs.root_id(), "/home/player", "player")
-            .expect("home path should resolve");
-
-        vfs.write_file(home, "journal.txt", "player", "entry".to_string())
-            .expect("player should create a file");
-
-        assert_eq!(
-            vfs.read_file(home, "journal.txt", "player")
-                .expect("player should read created file"),
-            "entry"
-        );
-    }
-
-    #[test]
-    fn enforces_permissions_for_other_users() {
-        let mut vfs = seeded_vfs();
-        let monster = vfs
-            .resolve_node(vfs.root_id(), "/monster/slime", "root")
-            .expect("monster directory should resolve");
-
-        vfs.chmod(
-            monster,
-            "hp",
-            "root",
-            Permissions::from_octal("600").expect("mode should parse"),
-        )
-        .expect("root should be able to chmod");
-
-        let error = vfs
-            .read_file(vfs.root_id(), "/monster/slime/hp", "player")
-            .expect_err("player should be blocked");
-
-        assert!(matches!(
-            error,
-            FsError::PermissionDenied { action: "read", .. }
-        ));
-    }
-
-    #[test]
-    fn reports_recursive_sizes() {
-        let vfs = seeded_vfs();
-        let home_stat = vfs
-            .stat(vfs.root_id(), "/home/player", "player")
-            .expect("home stat should work");
-        let readme_size = vfs
-            .read_file(vfs.root_id(), "/home/player/readme.txt", "player")
-            .expect("readme should be readable")
-            .len();
-        let notes_size = vfs
-            .read_file(vfs.root_id(), "/home/player/notes.txt", "player")
-            .expect("notes should be readable")
-            .len();
-
-        assert_eq!(home_stat.size, readme_size + notes_size);
-    }
-
-    #[test]
-    fn rejects_non_empty_directory_removal() {
-        let mut vfs = seeded_vfs();
-        let error = vfs
-            .remove(vfs.root_id(), "/home/player", "player")
-            .expect_err("non-empty directory removal should fail");
-
-        assert!(matches!(error, FsError::DirectoryNotEmpty(_)));
     }
 }

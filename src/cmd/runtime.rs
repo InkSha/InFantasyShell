@@ -1,7 +1,7 @@
-use crate::vfs::{FsError, NodeId, Vfs};
+use crate::system::{System, error::FsError, storage::node::NodeId};
 
 pub struct ShellState {
-    pub vfs: Vfs,
+    pub system: System,
     pub cwd: NodeId,
     pub home: NodeId,
     pub actor: String,
@@ -9,11 +9,16 @@ pub struct ShellState {
 
 impl ShellState {
     pub fn new(actor: &str) -> Result<Self, FsError> {
-        let vfs = Vfs::new_mvp_world()?;
-        let cwd = vfs.resolve_node_unchecked(vfs.root_id(), "/home/player")?;
+        let mut system = System::default();
+
+        system.storage.new_mvp_world()?;
+
+        let cwd = system
+            .storage
+            .resolve_node_unchecked(system.storage.root_id(), "/home/player")?;
 
         Ok(Self {
-            vfs,
+            system,
             cwd,
             home: cwd,
             actor: actor.to_string(),
@@ -22,7 +27,8 @@ impl ShellState {
 
     pub fn render_prompt(&self, shell_name: &str) -> String {
         let cwd_path = self
-            .vfs
+            .system
+            .storage
             .absolute_path(self.cwd)
             .unwrap_or_else(|_| "/".to_string());
         format!("{}@{}:{}$ ", self.actor, shell_name, cwd_path)

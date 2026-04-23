@@ -9,7 +9,8 @@ pub fn register_command() -> command::Command {
             Ok(state.home)
         } else {
             state
-                .vfs
+                .system
+                .storage
                 .change_dir(state.cwd, target, state.actor.as_str())
         };
 

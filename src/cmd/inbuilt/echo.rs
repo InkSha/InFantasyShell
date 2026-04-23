@@ -18,7 +18,7 @@ pub fn register_command() -> command::Command {
             let content = args[..redirect_index].join(" ");
             let path = &args[redirect_index + 1];
 
-            return match state.vfs.write_file(
+            return match state.system.storage.write_file(
                 state.cwd,
                 path.as_str(),
                 state.actor.as_str(),
@@ -72,7 +72,8 @@ mod tests {
         assert!(matches!(output, CommandOutput::NONE));
         assert_eq!(
             state
-                .vfs
+                .system
+                .storage
                 .read_file(state.cwd, "journal.txt", state.actor.as_str())
                 .expect("journal should be written"),
             "quest log"

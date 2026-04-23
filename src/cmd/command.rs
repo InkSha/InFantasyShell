@@ -1,4 +1,4 @@
-use crate::cmd::runtime::ShellState;
+use crate::system::System;
 
 pub enum CommandOutput {
     NONE,
@@ -11,9 +11,9 @@ pub enum CommandOutput {
     ERROR(String),
 }
 
-pub type CommandHandle = fn(args: &[String], state: &mut ShellState) -> CommandOutput;
+pub type CommandHandle = fn(args: &[String], state: &mut System) -> CommandOutput;
 
-pub fn command_default_handle(_: &[String], _: &mut ShellState) -> CommandOutput {
+pub fn command_default_handle(_: &[String], _: &mut System) -> CommandOutput {
     CommandOutput::NONE
 }
 
@@ -61,7 +61,7 @@ impl Command {
         self
     }
 
-    pub fn execute(&self, args: &[String], state: &mut ShellState) -> CommandOutput {
+    pub fn execute(&self, args: &[String], state: &mut System) -> CommandOutput {
         (self.handle)(args, state)
     }
 }

@@ -6,7 +6,6 @@ pub mod command;
 pub mod inbuilt;
 mod output;
 mod parser;
-pub mod runtime;
 pub mod terminal;
 
 pub struct Cmd {
@@ -25,10 +24,17 @@ impl Cmd {
     pub fn run(&self) {
         enable_raw_mode().unwrap();
 
+        let mut system = match crate::system::System::default() {
+            Ok(system) => system,
+            Err(e) => {
+                panic!("Failed to initialize system: {}", e);
+            }
+        };
+
         let mut ctx = terminal::Terminal::default();
-        let mut shell_state = runtime::ShellState::new("player")
-            .expect("shell state should initialize with the default VFS world");
-        ctx.set_prompt(shell_state.render_prompt(self.prompt.as_str()));
+        system.login();
+
+        ctx.set_prompt(system.render_prompt(self.prompt.as_str()));
 
         ctx.clear_screen();
         ctx.write_with_prompt("");
@@ -45,7 +51,7 @@ impl Cmd {
             let trimmed = line.trim();
 
             if trimmed.is_empty() {
-                ctx.set_prompt(shell_state.render_prompt(self.prompt.as_str()));
+                ctx.set_prompt(system.render_prompt(self.prompt.as_str()));
                 ctx.new_line();
                 continue;
             }
@@ -61,7 +67,7 @@ impl Cmd {
                         .get(&cmd)
                         .or_else(|| self.commands.get(&normalized))
                     {
-                        match command.execute(&args, &mut shell_state) {
+                        match command.execute(&args, &mut system) {
                             // TODO: implement reactive commands
                             command::CommandOutput::REACTIVE => (),
                             command::CommandOutput::DISPLAY(output) => {
@@ -90,7 +96,7 @@ impl Cmd {
                     ctx.write(format!("Error: {}", msg));
                 }
             }
-            ctx.set_prompt(shell_state.render_prompt(self.prompt.as_str()));
+            ctx.set_prompt(system.render_prompt(self.prompt.as_str()));
             ctx.new_line();
         }
 

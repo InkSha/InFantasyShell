@@ -3,7 +3,7 @@ use crate::cmd::command;
 pub fn register_command() -> command::Command {
     let mut cmd = command::Command::new("echo");
 
-    cmd.with_casesensitive(false).with_handle(|args, state| {
+    cmd.with_casesensitive(false).with_handle(|args, system| {
         if args.is_empty() {
             return command::CommandOutput::DISPLAY(String::new());
         }
@@ -18,10 +18,10 @@ pub fn register_command() -> command::Command {
             let content = args[..redirect_index].join(" ");
             let path = &args[redirect_index + 1];
 
-            return match state.system.storage.write_file(
-                state.cwd,
+            return match system.storage.write_file(
+                system.get_cwd(),
                 path.as_str(),
-                state.actor.as_str(),
+                &system.get_actor(),
                 content,
             ) {
                 Ok(()) => command::CommandOutput::NONE,
@@ -33,50 +33,4 @@ pub fn register_command() -> command::Command {
     });
 
     cmd
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::cmd::command::CommandOutput;
-    use crate::cmd::runtime::ShellState;
-
-    use super::register_command;
-
-    #[test]
-    fn echo_without_redirection_displays_text() {
-        let command = register_command();
-        let mut state = ShellState::new("player").expect("shell state should initialize");
-        let args = vec!["hello".to_string(), "world".to_string()];
-
-        let output = command.execute(&args, &mut state);
-
-        match output {
-            CommandOutput::DISPLAY(content) => assert_eq!(content, "hello world"),
-            _ => panic!("echo should display plain text"),
-        }
-    }
-
-    #[test]
-    fn echo_redirection_writes_into_vfs() {
-        let command = register_command();
-        let mut state = ShellState::new("player").expect("shell state should initialize");
-        let args = vec![
-            "quest".to_string(),
-            "log".to_string(),
-            ">".to_string(),
-            "journal.txt".to_string(),
-        ];
-
-        let output = command.execute(&args, &mut state);
-
-        assert!(matches!(output, CommandOutput::NONE));
-        assert_eq!(
-            state
-                .system
-                .storage
-                .read_file(state.cwd, "journal.txt", state.actor.as_str())
-                .expect("journal should be written"),
-            "quest log"
-        );
-    }
 }

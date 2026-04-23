@@ -4,12 +4,11 @@ use crate::system::storage::node::NodeType;
 pub fn register_command() -> command::Command {
     let mut cmd = command::Command::new("ls");
 
-    cmd.with_casesensitive(false).with_handle(|args, state| {
-        let path = args.first().map(String::as_str).unwrap_or(".");
-        match state
-            .system
+    cmd.with_casesensitive(false).with_handle(|args, system| {
+        let path: &str = args.first().map(String::as_str).unwrap_or(".");
+        match system
             .storage
-            .list_dir(state.cwd, path, state.actor.as_str())
+            .list_dir(system.get_cwd(), path, &system.get_actor())
         {
             Ok(entries) => {
                 let items = entries

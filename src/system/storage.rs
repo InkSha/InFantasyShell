@@ -8,23 +8,24 @@ use node::{
 };
 use std::collections::{BTreeMap, HashMap};
 
+mod dir;
+mod file;
 pub mod node;
 
-#[derive(Debug)]
-pub struct Vfs {
+pub struct Storage {
     root: NodeId,
     next_id: NodeId,
     nodes: HashMap<NodeId, Node>,
+
+    pub total: DataSize,
+    pub used: DataSize,
 }
 
-impl Default for Vfs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+impl Storage {
+    pub fn default() -> Self {
+        let total = DataSize::Gigabyte(50);
+        let used = DataSize::Gigabyte(10);
 
-impl Vfs {
-    pub fn new() -> Self {
         let root_id = 1;
         let root = Node {
             id: root_id,
@@ -41,31 +42,11 @@ impl Vfs {
         nodes.insert(root_id, root);
 
         Self {
+            total,
+            used,
             root: root_id,
             next_id: root_id + 1,
             nodes,
-        }
-    }
-}
-
-pub struct Storage {
-    vfs: Vfs,
-    pub total: DataSize,
-    pub used: DataSize,
-}
-
-impl Storage {
-    /// Creates a new Storage instance with default values.
-    /// - Total storage is set to 50 GB.
-    /// - Used storage is set to 10 GB.
-    pub fn default() -> Self {
-        let total = DataSize::Gigabyte(50);
-        let used = DataSize::Gigabyte(10);
-
-        Self {
-            total,
-            used,
-            vfs: Vfs::new(),
         }
     }
 
@@ -149,7 +130,7 @@ impl Storage {
     }
 
     pub fn root_id(&self) -> NodeId {
-        self.vfs.root
+        self.root
     }
 
     pub fn stat(&self, cwd: NodeId, path: &str, actor: &str) -> Result<Stat, FsError> {
@@ -300,7 +281,7 @@ impl Storage {
 
     pub fn remove(&mut self, cwd: NodeId, path: &str, actor: &str) -> Result<(), FsError> {
         let node_id = self.resolve_node(cwd, path, actor)?;
-        if node_id == self.vfs.root {
+        if node_id == self.root {
             return Err(FsError::CannotRemoveRoot);
         }
 
@@ -327,7 +308,7 @@ impl Storage {
         if let NodeKind::Directory(parent_directory) = &mut self.node_mut(parent_id)?.kind {
             parent_directory.children.remove(&node_name);
         }
-        self.vfs.nodes.remove(&node_id);
+        self.nodes.remove(&node_id);
 
         Ok(())
     }
@@ -385,11 +366,11 @@ impl Storage {
         }
 
         if trimmed == "/" {
-            return Ok(self.vfs.root);
+            return Ok(self.root);
         }
 
         let mut current = if trimmed.starts_with('/') {
-            self.vfs.root
+            self.root
         } else {
             cwd
         };
@@ -402,7 +383,7 @@ impl Storage {
             match segment {
                 "." => {}
                 ".." => {
-                    current = self.node(current)?.parent.unwrap_or(self.vfs.root);
+                    current = self.node(current)?.parent.unwrap_or(self.root);
                 }
                 name => {
                     let current_path = self.absolute_path(current)?;
@@ -502,9 +483,9 @@ impl Storage {
             .ok_or_else(|| FsError::InvalidPath(path.to_string()))?;
 
         let parent = if parts.is_empty() {
-            self.vfs.root
+            self.root
         } else {
-            self.resolve_node_unchecked(self.vfs.root, format!("/{}", parts.join("/")).as_str())?
+            self.resolve_node_unchecked(self.root, format!("/{}", parts.join("/")).as_str())?
         };
 
         Ok((parent, name.to_string()))
@@ -534,7 +515,7 @@ impl Storage {
         };
 
         self.insert_child(parent_id, name, new_id)?;
-        self.vfs.nodes.insert(new_id, node);
+        self.nodes.insert(new_id, node);
         Ok(new_id)
     }
 
@@ -561,7 +542,7 @@ impl Storage {
         };
 
         self.insert_child(parent_id, name, new_id)?;
-        self.vfs.nodes.insert(new_id, node);
+        self.nodes.insert(new_id, node);
         Ok(new_id)
     }
 
@@ -667,21 +648,19 @@ impl Storage {
     }
 
     fn next_node_id(&mut self) -> NodeId {
-        let id = self.vfs.next_id;
-        self.vfs.next_id += 1;
+        let id = self.next_id;
+        self.next_id += 1;
         id
     }
 
     fn node(&self, node_id: NodeId) -> Result<&Node, FsError> {
-        self.vfs
-            .nodes
+        self.nodes
             .get(&node_id)
             .ok_or_else(|| FsError::NotFound(format!("node:{node_id}")))
     }
 
     fn node_mut(&mut self, node_id: NodeId) -> Result<&mut Node, FsError> {
-        self.vfs
-            .nodes
+        self.nodes
             .get_mut(&node_id)
             .ok_or_else(|| FsError::NotFound(format!("node:{node_id}")))
     }

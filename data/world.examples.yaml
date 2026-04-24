@@ -121,7 +121,6 @@ children:
       - name: forest
         children:
           - name: clearing
-
       - name: mountain
         children:
           - name: copper
